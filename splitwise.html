@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SplitWise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0f;
+    --surface: #18181b;
+    --surface2: #222228;
+    --border: #2e2e38;
+    --accent: #c8f135;
+    --accent-dim: #8faa22;
+    --text: #f0f0f0;
+    --muted: #888;
+    --danger: #ff5c5c;
+    --warning: #f5a623;
+    --deleted-bg: #1e1414;
+    --edited-bg: #1a1a10;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: var(--accent);
+    margin-bottom: 0.2rem;
+  }
+  .tagline { color: var(--muted); font-size: 0.85rem; margin-bottom: 2.5rem; font-family: 'DM Mono', monospace; }
+  .layout { display: grid; grid-template-columns: 280px 1fr; gap: 2rem; max-width: 1100px; margin: 0 auto; }
+  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+  .panel-title {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  input, select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+
+  .btn {
+    background: var(--accent);
+    color: #0e0e0f;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: scale(0.97); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid #3a2020; }
+  .btn-danger:hover { background: #2a1515; border-color: var(--danger); }
+
+  .member-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .member-name { flex: 1; font-size: 0.9rem; }
+  .remove-btn {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 1rem; padding: 0 0.25rem;
+    transition: color 0.15s;
+  }
+  .remove-btn:hover { color: var(--danger); }
+
+  .add-member-row { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .add-member-row input { flex: 1; }
+
+  .summary-section { margin-top: 1.5rem; }
+  .balance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .balance-row:last-child { border-bottom: none; }
+  .pos { color: var(--accent); font-family: 'DM Mono', monospace; }
+  .neg { color: var(--danger); font-family: 'DM Mono', monospace; }
+  .zero { color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  .settlement-row {
+    font-size: 0.8rem;
+    color: var(--muted);
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+  }
+  .settlement-row:last-child { border-bottom: none; }
+  .arrow { color: var(--accent); }
+
+  .expense-form .form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .expense-form .form-row > * { flex: 1; min-width: 120px; }
+  .form-label { font-size: 0.7rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 0.3rem; letter-spacing: 1px; text-transform: uppercase; }
+
+  .splits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  .split-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .split-item label { font-size: 0.8rem; flex: 1; cursor: pointer; }
+  .split-item input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; }
+  .split-item input[type=number] {
+    width: 60px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .split-mode-tabs { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .tab-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn.active { background: var(--accent); color: #0e0e0f; border-color: var(--accent); font-weight: 700; }
+
+  .expense-list { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+  .expense-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+  .expense-card:hover { border-color: #44444f; }
+  .expense-card.deleted {
+    background: var(--deleted-bg);
+    border-color: #3a2020;
+    opacity: 0.7;
+  }
+  .expense-card.edited {
+    border-left: 3px solid var(--warning);
+  }
+  .expense-card.deleted .expense-title { text-decoration: line-through; color: var(--muted); }
+
+  .expense-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .expense-title { font-weight: 700; font-size: 0.95rem; }
+  .expense-amount { font-family: 'DM Mono', monospace; font-size: 1.1rem; color: var(--accent); font-weight: 500; }
+  .expense-card.deleted .expense-amount { color: var(--muted); }
+  .expense-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; font-family: 'DM Mono', monospace; }
+  .expense-splits { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .split-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 0.2rem 0.5rem;
+    color: var(--muted);
+  }
+  .status-badge {
+    font-size: 0.65rem;
+    font-family: 'DM Mono', monospace;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .badge-deleted { background: #2a1515; color: var(--danger); border: 1px solid #3a2020; }
+  .badge-edited { background: #1e1a0e; color: var(--warning); border: 1px solid #3a3010; }
+
+  .expense-actions { display: flex; gap: 0.4rem; flex-shrink: 0; align-items: center; }
+  .edit-history { margin-top: 0.5rem; font-size: 0.72rem; color: var(--muted); font-family: 'DM Mono', monospace; background: var(--surface2); border-radius: 5px; padding: 0.4rem 0.6rem; }
+  .edit-history-title { color: var(--warning); margin-bottom: 0.2rem; }
+
+  .empty-state { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 2rem; font-family: 'DM Mono', monospace; }
+
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 1rem;
+  }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; }
+  .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .total-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 0.25rem 0.6rem;
+    border-radius: 5px;
+    color: var(--accent);
+  }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+  .tip { font-size: 0.72rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 0.4rem; }
+</style>
+</head>
+<body>
+
+<div style="max-width:1100px;margin:0 auto;">
+  <h1>splitwise<span style="color:var(--muted)">.</span></h1>
+  <p class="tagline">// track shared expenses without the drama</p>
+
+  <div class="layout">
+    <!-- LEFT: Members + Summary -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem;">
+      <div class="panel">
+        <div class="panel-title">Members</div>
+        <div id="members-list"></div>
+        <div class="add-member-row">
+          <input type="text" id="new-member-input" placeholder="Name…" maxlength="30">
+          <button class="btn" onclick="addMember()">Add</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Balances</div>
+        <div id="balances-list"><p class="empty-state">No data yet</p></div>
+        <hr class="divider">
+        <div class="panel-title">Settlements</div>
+        <div id="settlements-list"><p class="empty-state">All even!</p></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Add Expense + Expense List -->
+    <div>
+      <div class="panel expense-form" id="expense-form-panel">
+        <div class="section-header">
+          <div class="panel-title" style="margin:0">Add Expense</div>
+          <div id="total-chip" class="total-chip" style="display:none"></div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <div class="form-label">Description</div>
+            <input type="text" id="exp-desc" placeholder="e.g. Dinner at Noma" maxlength="80">
+          </div>
+          <div style="max-width:130px">
+            <div class="form-label">Amount</div>
+            <input type="number" id="exp-amount" placeholder="0.00" min="0" step="0.01">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <div class="form-label">Paid by</div>
+            <select id="exp-paidby"></select>
+          </div>
+        </div>
+
+        <div class="form-label" style="margin-bottom:0.4rem">Split among</div>
+        <div class="split-mode-tabs">
+          <button class="tab-btn active" onclick="setSplitMode('equal')" id="tab-equal">Equal</button>
+          <button class="tab-btn" onclick="setSplitMode('ratio')" id="tab-ratio">Ratio</button>
+          <button class="tab-btn" onclick="setSplitMode('exact')" id="tab-exact">Exact</button>
+        </div>
+        <div id="split-hint" class="tip"></div>
+        <div class="splits-grid" id="splits-grid"></div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+          <button class="btn" onclick="saveExpense()">Add Expense</button>
+        </div>
+      </div>
+
+      <div class="expense-list" id="expense-list">
+        <p class="empty-state" style="padding:3rem 1rem">No expenses yet. Add one above ↑</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Edit Expense</div>
+    <div>
+      <div class="form-label">Description</div>
+      <input type="text" id="edit-desc" maxlength="80" style="margin-bottom:0.75rem">
+      <div class="form-label">Amount</div>
+      <input type="number" id="edit-amount" min="0" step="0.01" style="margin-bottom:0.75rem">
+      <div class="form-label">Paid by</div>
+      <select id="edit-paidby" style="margin-bottom:0.75rem"></select>
+      <div class="form-label" style="margin-bottom:0.4rem">Split among</div>
+      <div class="split-mode-tabs">
+        <button class="tab-btn active" onclick="setEditSplitMode('equal')" id="etab-equal">Equal</button>
+        <button class="tab-btn" onclick="setEditSplitMode('ratio')" id="etab-ratio">Ratio</button>
+        <button class="tab-btn" onclick="setEditSplitMode('exact')" id="etab-exact">Exact</button>
+      </div>
+      <div class="splits-grid" id="edit-splits-grid"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeEditModal()">Cancel</button>
+      <button class="btn" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DB_NAME = 'splitwise_db', DB_VER = 1;
+let db, members = [], expenses = [], editingId = null, splitMode = 'equal', editSplitMode = 'equal';
+
+function initDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('members')) d.createObjectStore('members', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('expenses')) d.createObjectStore('expenses', { keyPath: 'id' });
+    };
+    req.onsuccess = e => { db = e.target.result; res(); };
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbGet(store) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbPut(store, obj) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).put(obj);
+    req.onsuccess = () => res();
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbDelete(store, id) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).delete(id);
+    req.onsuccess = () => res();
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+function initials(name) {
+  return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function renderMembers() {
+  const el = document.getElementById('members-list');
+  if (!members.length) { el.innerHTML = '<p class="empty-state">No members yet</p>'; }
+  else {
+    el.innerHTML = members.map(m => `
+      <div class="member-row">
+        <div class="avatar">${initials(m.name)}</div>
+        <span class="member-name">${esc(m.name)}</span>
+        <button class="remove-btn" title="Remove" onclick="removeMember('${m.id}')">✕</button>
+      </div>`).join('');
+  }
+  refreshDropdowns();
+  renderSplitsGrid('splits-grid', splitMode, false);
+  renderExpenses();
+}
+
+function refreshDropdowns() {
+  const opts = members.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('');
+  document.getElementById('exp-paidby').innerHTML = opts || '<option value="">-- no members --</option>';
+  const eopts = members.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('');
+  document.getElementById('edit-paidby').innerHTML = eopts;
+}
+
+async function addMember() {
+  const inp = document.getElementById('new-member-input');
+  const name = inp.value.trim();
+  if (!name) return;
+  const m = { id: uid(), name };
+  members.push(m);
+  await dbPut('members', m);
+  inp.value = '';
+  renderMembers();
+  computeBalances();
+}
+
+async function removeMember(id) {
+  if (!confirm('Remove member? Their expenses will remain but balances may change.')) return;
+  members = members.filter(m => m.id !== id);
+  await dbDelete('members', id);
+  renderMembers();
+  computeBalances();
+}
+
+function setSplitMode(mode) {
+  splitMode = mode;
+  ['equal','ratio','exact'].forEach(m => {
+    document.getElementById('tab-' + m).classList.toggle('active', m === mode);
+  });
+  const hints = {
+    equal: '// selected members split equally',
+    ratio: '// enter relative weights (e.g. 2:1:1)',
+    exact: '// enter exact amounts — must sum to total'
+  };
+  document.getElementById('split-hint').textContent = hints[mode];
+  renderSplitsGrid('splits-grid', mode, false);
+}
+
+function setEditSplitMode(mode) {
+  editSplitMode = mode;
+  ['equal','ratio','exact'].forEach(m => {
+    document.getElementById('etab-' + m).classList.toggle('active', m === mode);
+  });
+  renderSplitsGrid('edit-splits-grid', mode, true);
+}
+
+function renderSplitsGrid(containerId, mode, isEdit) {
+  const container = document.getElementById(containerId);
+  if (!members.length) { container.innerHTML = '<p class="tip">Add members first</p>'; return; }
+  const existing = isEdit ? getEditSplitValues() : getCurrentSplitValues(containerId);
+  container.innerHTML = members.map(m => {
+    const prev = existing[m.id];
+    const checked = prev !== undefined ? prev.checked : true;
+    const val = prev !== undefined ? prev.val : (mode === 'equal' ? '' : '1');
+    const showInput = mode !== 'equal';
+    return `<div class="split-item">
+      <input type="checkbox" id="sc_${containerId}_${m.id}" ${checked ? 'checked' : ''}
+        onchange="onSplitCheck('${containerId}', '${m.id}', this.checked, '${mode}')">
+      <label for="sc_${containerId}_${m.id}">${esc(m.name)}</label>
+      ${showInput ? `<input type="number" id="sv_${containerId}_${m.id}" value="${val}" min="0" step="0.01"
+        style="display:${checked ? 'block' : 'none'}" oninput="onSplitValChange('${containerId}')">` : ''}
+    </div>`;
+  }).join('');
+}
+
+function onSplitCheck(cid, mid, checked, mode) {
+  if (mode !== 'equal') {
+    const inp = document.getElementById(`sv_${cid}_${mid}`);
+    if (inp) inp.style.display = checked ? 'block' : 'none';
+  }
+  onSplitValChange(cid);
+}
+
+function onSplitValChange(cid) {
+  if (cid === 'splits-grid') updateTotalChip();
+}
+
+function getCurrentSplitValues(cid) {
+  const out = {};
+  members.forEach(m => {
+    const cb = document.getElementById(`sc_${cid}_${m.id}`);
+    const inp = document.getElementById(`sv_${cid}_${m.id}`);
+    if (cb) out[m.id] = { checked: cb.checked, val: inp ? inp.value : '' };
+  });
+  return out;
+}
+
+function getEditSplitValues() {
+  const out = {};
+  members.forEach(m => {
+    const cb = document.getElementById(`sc_edit-splits-grid_${m.id}`);
+    const inp = document.getElementById(`sv_edit-splits-grid_${m.id}`);
+    if (cb) out[m.id] = { checked: cb.checked, val: inp ? inp.value : '' };
+  });
+  return out;
+}
+
+function updateTotalChip() {
+  const amt = parseFloat(document.getElementById('exp-amount').value) || 0;
+  const chip = document.getElementById('total-chip');
+  chip.style.display = amt ? 'block' : 'none';
+  chip.textContent = amt.toFixed(2);
+}
+
+function buildSplitMap(cid, mode, totalAmount) {
+  const splits = {};
+  members.forEach(m => {
+    const cb = document.getElementById(`sc_${cid}_${m.id}`);
+    if (!cb || !cb.checked) return;
+    const inp = document.getElementById(`sv_${cid}_${m.id}`);
+    if (mode === 'equal') {
+      splits[m.id] = { name: m.name, ratio: 1, amount: 0 };
+    } else if (mode === 'ratio') {
+      splits[m.id] = { name: m.name, ratio: parseFloat(inp?.value) || 1, amount: 0 };
+    } else {
+      splits[m.id] = { name: m.name, ratio: 0, amount: parseFloat(inp?.value) || 0 };
+    }
+  });
+
+  const keys = Object.keys(splits);
+  if (!keys.length) return {};
+
+  if (mode === 'equal') {
+    const share = totalAmount / keys.length;
+    keys.forEach(k => splits[k].amount = share);
+  } else if (mode === 'ratio') {
+    const total = keys.reduce((s, k) => s + splits[k].ratio, 0) || 1;
+    keys.forEach(k => splits[k].amount = (splits[k].ratio / total) * totalAmount);
+  }
+  // exact: amounts already set
+
+  return splits;
+}
+
+async function saveExpense() {
+  const desc = document.getElementById('exp-desc').value.trim();
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const paidById = document.getElementById('exp-paidby').value;
+
+  if (!desc) return alert('Add a description');
+  if (!amount || amount <= 0) return alert('Enter a valid amount');
+  if (!paidById) return alert('Select who paid');
+
+  const splits = buildSplitMap('splits-grid', splitMode, amount);
+  if (!Object.keys(splits).length) return alert('Select at least one person to split with');
+
+  if (splitMode === 'exact') {
+    const sum = Object.values(splits).reduce((s, v) => s + v.amount, 0);
+    if (Math.abs(sum - amount) > 0.01) return alert(`Exact amounts sum to ${sum.toFixed(2)}, but expense is ${amount.toFixed(2)}`);
+  }
+
+  const paidBy = members.find(m => m.id === paidById);
+  const exp = {
+    id: uid(), desc, amount, paidById, paidByName: paidBy?.name,
+    splits, splitMode, deleted: false, edited: false,
+    history: [], createdAt: Date.now()
+  };
+  expenses.push(exp);
+  await dbPut('expenses', exp);
+
+  document.getElementById('exp-desc').value = '';
+  document.getElementById('exp-amount').value = '';
+  renderSplitsGrid('splits-grid', splitMode, false);
+  document.getElementById('total-chip').style.display = 'none';
+  renderExpenses();
+  computeBalances();
+}
+
+async function deleteExpense(id) {
+  if (!confirm('Mark this expense as deleted? It will remain visible but excluded from balances.')) return;
+  const exp = expenses.find(e => e.id === id);
+  if (!exp) return;
+  exp.history.push({ action: 'deleted', at: Date.now(), snapshot: snapshotExp(exp) });
+  exp.deleted = true;
+  await dbPut('expenses', exp);
+  renderExpenses();
+  computeBalances();
+}
+
+function snapshotExp(e) {
+  return { desc: e.desc, amount: e.amount, paidById: e.paidById, paidByName: e.paidByName, splits: JSON.parse(JSON.stringify(e.splits)), splitMode: e.splitMode };
+}
+
+function openEditModal(id) {
+  const exp = expenses.find(e => e.id === id);
+  if (!exp || exp.deleted) return;
+  editingId = id;
+  document.getElementById('edit-desc').value = exp.desc;
+  document.getElementById('edit-amount').value = exp.amount;
+  document.getElementById('edit-paidby').value = exp.paidById;
+  editSplitMode = exp.splitMode || 'equal';
+  ['equal','ratio','exact'].forEach(m => {
+    document.getElementById('etab-' + m).classList.toggle('active', m === editSplitMode);
+  });
+
+  renderSplitsGrid('edit-splits-grid', editSplitMode, true);
+  // restore split state
+  setTimeout(() => {
+    members.forEach(m => {
+      const cb = document.getElementById(`sc_edit-splits-grid_${m.id}`);
+      const inp = document.getElementById(`sv_edit-splits-grid_${m.id}`);
+      const s = exp.splits[m.id];
+      if (cb) cb.checked = !!s;
+      if (inp) {
+        inp.style.display = s ? 'block' : 'none';
+        if (s) inp.value = editSplitMode === 'ratio' ? s.ratio : editSplitMode === 'exact' ? s.amount : '';
+      }
+    });
+  }, 0);
+
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').style.display = 'none';
+  editingId = null;
+}
+
+async function saveEdit() {
+  const exp = expenses.find(e => e.id === editingId);
+  if (!exp) return;
+
+  const desc = document.getElementById('edit-desc').value.trim();
+  const amount = parseFloat(document.getElementById('edit-amount').value);
+  const paidById = document.getElementById('edit-paidby').value;
+
+  if (!desc) return alert('Add a description');
+  if (!amount || amount <= 0) return alert('Enter a valid amount');
+
+  const splits = buildSplitMap('edit-splits-grid', editSplitMode, amount);
+  if (!Object.keys(splits).length) return alert('Select at least one person');
+
+  if (editSplitMode === 'exact') {
+    const sum = Object.values(splits).reduce((s, v) => s + v.amount, 0);
+    if (Math.abs(sum - amount) > 0.01) return alert(`Exact amounts sum to ${sum.toFixed(2)}, but expense is ${amount.toFixed(2)}`);
+  }
+
+  exp.history.push({ action: 'edited', at: Date.now(), snapshot: snapshotExp(exp) });
+  const paidBy = members.find(m => m.id === paidById);
+  exp.desc = desc; exp.amount = amount;
+  exp.paidById = paidById; exp.paidByName = paidBy?.name;
+  exp.splits = splits; exp.splitMode = editSplitMode;
+  exp.edited = true;
+
+  await dbPut('expenses', exp);
+  closeEditModal();
+  renderExpenses();
+  computeBalances();
+}
+
+function renderExpenses() {
+  const el = document.getElementById('expense-list');
+  if (!expenses.length) {
+    el.innerHTML = '<p class="empty-state" style="padding:3rem 1rem">No expenses yet. Add one above ↑</p>';
+    return;
+  }
+  const sorted = [...expenses].sort((a, b) => b.createdAt - a.createdAt);
+  el.innerHTML = sorted.map(e => {
+    const badges = [];
+    if (e.deleted) badges.push('<span class="status-badge badge-deleted">deleted</span>');
+    else if (e.edited) badges.push('<span class="status-badge badge-edited">edited</span>');
+
+    const splitBadges = Object.values(e.splits).map(s =>
+      `<span class="split-badge">${esc(s.name)} · ${s.amount.toFixed(2)}</span>`
+    ).join('');
+
+    const historyHtml = e.history.length ? `
+      <div class="edit-history">
+        <div class="edit-history-title">history</div>
+        ${e.history.map(h => `<div>${h.action} · ${new Date(h.at).toLocaleString()} — was "${esc(h.snapshot.desc)}" ${h.snapshot.amount.toFixed(2)} paid by ${esc(h.snapshot.paidByName)}</div>`).join('')}
+      </div>` : '';
+
+    const actions = e.deleted ? '' : `
+      <div class="expense-actions">
+        <button class="btn-ghost" onclick="openEditModal('${e.id}')">edit</button>
+        <button class="btn-ghost btn-danger" onclick="deleteExpense('${e.id}')">delete</button>
+      </div>`;
+
+    return `
+      <div class="expense-card ${e.deleted ? 'deleted' : ''} ${!e.deleted && e.edited ? 'edited' : ''}">
+        <div class="expense-header">
+          <div>
+            <span class="expense-title">${esc(e.desc)}</span>
+            ${badges.join(' ')}
+            <div class="expense-meta">paid by ${esc(e.paidByName || '?')} · ${e.splitMode} split</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
+            <span class="expense-amount">${e.amount.toFixed(2)}</span>
+            ${actions}
+          </div>
+        </div>
+        <div class="expense-splits">${splitBadges}</div>
+        ${historyHtml}
+      </div>`;
+  }).join('');
+}
+
+function computeBalances() {
+  const balances = {};
+  members.forEach(m => balances[m.id] = { name: m.name, net: 0 });
+
+  expenses.filter(e => !e.deleted).forEach(e => {
+    if (balances[e.paidById] !== undefined) balances[e.paidById].net += e.amount;
+    Object.entries(e.splits).forEach(([mid, s]) => {
+      if (balances[mid] !== undefined) balances[mid].net -= s.amount;
+    });
+  });
+
+  const el = document.getElementById('balances-list');
+  if (!members.length) { el.innerHTML = '<p class="empty-state">No members</p>'; return; }
+  el.innerHTML = Object.values(balances).map(b => {
+    const cls = b.net > 0.005 ? 'pos' : b.net < -0.005 ? 'neg' : 'zero';
+    const label = b.net > 0.005 ? `+${b.net.toFixed(2)}` : b.net < -0.005 ? b.net.toFixed(2) : '0.00';
+    return `<div class="balance-row"><span>${esc(b.name)}</span><span class="${cls}">${label}</span></div>`;
+  }).join('');
+
+  // settlements (min-cash-flow)
+  const debtors = [], creditors = [];
+  Object.values(balances).forEach(b => {
+    if (b.net < -0.005) debtors.push({ name: b.name, amt: -b.net });
+    else if (b.net > 0.005) creditors.push({ name: b.name, amt: b.net });
+  });
+  const settlements = [];
+  let d = 0, c = 0;
+  const dc = debtors.map(x => ({ ...x })), cc = creditors.map(x => ({ ...x }));
+  while (d < dc.length && c < cc.length) {
+    const pay = Math.min(dc[d].amt, cc[c].amt);
+    settlements.push({ from: dc[d].name, to: cc[c].name, amt: pay });
+    dc[d].amt -= pay; cc[c].amt -= pay;
+    if (dc[d].amt < 0.005) d++;
+    if (cc[c].amt < 0.005) c++;
+  }
+  const sel = document.getElementById('settlements-list');
+  if (!settlements.length) sel.innerHTML = '<p class="empty-state">All even!</p>';
+  else sel.innerHTML = settlements.map(s =>
+    `<div class="settlement-row">${esc(s.from)} <span class="arrow">→</span> ${esc(s.to)} <strong style="float:right">${s.amt.toFixed(2)}</strong></div>`
+  ).join('');
+}
+
+function esc(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('exp-amount').addEventListener('input', updateTotalChip);
+document.getElementById('new-member-input').addEventListener('keydown', e => { if (e.key === 'Enter') addMember(); });
+
+async function init() {
+  await initDB();
+  members = await dbGet('members');
+  expenses = await dbGet('expenses');
+  renderMembers();
+  renderExpenses();
+  computeBalances();
+  setSplitMode('equal');
+}
+
+init();
+</script>
+</body>
+</html>
