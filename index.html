@@ -382,47 +382,34 @@
 </div>
 
 <script>
-const DB_NAME = 'splitwise_db', DB_VER = 1;
-let db, members = [], expenses = [], editingId = null, splitMode = 'equal', editSplitMode = 'equal';
+const API_BASE = '/api';
+let members = [], expenses = [], editingId = null, splitMode = 'equal', editSplitMode = 'equal';
 
-function initDB() {
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(DB_NAME, DB_VER);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('members')) d.createObjectStore('members', { keyPath: 'id' });
-      if (!d.objectStoreNames.contains('expenses')) d.createObjectStore('expenses', { keyPath: 'id' });
-    };
-    req.onsuccess = e => { db = e.target.result; res(); };
-    req.onerror = () => rej(req.error);
-  });
+async function initDB() {
+  const res = await fetch('/health');
+  if (!res.ok) throw new Error('Backend unavailable');
 }
 
-function dbGet(store) {
-  return new Promise((res, rej) => {
-    const tx = db.transaction(store, 'readonly');
-    const req = tx.objectStore(store).getAll();
-    req.onsuccess = () => res(req.result);
-    req.onerror = () => rej(req.error);
-  });
+async function dbGet(store) {
+  const res = await fetch(`${API_BASE}/${store}`);
+  if (!res.ok) throw new Error(`Failed to load ${store}`);
+  return res.json();
 }
 
-function dbPut(store, obj) {
-  return new Promise((res, rej) => {
-    const tx = db.transaction(store, 'readwrite');
-    const req = tx.objectStore(store).put(obj);
-    req.onsuccess = () => res();
-    req.onerror = () => rej(req.error);
+async function dbPut(store, obj) {
+  const res = await fetch(`${API_BASE}/${store}/${encodeURIComponent(obj.id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(obj),
   });
+  if (!res.ok) throw new Error(`Failed to save ${store}`);
 }
 
-function dbDelete(store, id) {
-  return new Promise((res, rej) => {
-    const tx = db.transaction(store, 'readwrite');
-    const req = tx.objectStore(store).delete(id);
-    req.onsuccess = () => res();
-    req.onerror = () => rej(req.error);
+async function dbDelete(store, id) {
+  const res = await fetch(`${API_BASE}/${store}/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
   });
+  if (!res.ok) throw new Error(`Failed to delete from ${store}`);
 }
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
