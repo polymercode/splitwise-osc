@@ -1,10 +1,12 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
 
 const app = express();
 const port = process.env.PORT || 3000;
-const dbUrl = process.env.DB_URL;
+const dbUrl = process.env.DB_URL || "postgresql://postgres.rtiaaxvdmqxkootfdtbm:9lEkRTPxEHGta50F@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres";
 
 if (!dbUrl) {
   console.error('Missing DB_URL environment variable.');
